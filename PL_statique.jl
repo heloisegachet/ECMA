@@ -22,7 +22,7 @@ function PL_statique(filename)
 
     ### Constraints
     
-    @constraint(m, [i in 1:n, k in 1:K], w_v[i]*y[i,k]<=B)
+    @constraint(m, [k in 1:K], sum(w_v[i]*y[i,k] for i in 1:n)<=B)
     
     @constraint(m, [i in 1:n], sum(y[i,k] for k in 1:K)==1)
     @constraint(m, [i in 1:n, j in 1:n, k in 1:K], y[i,k]+y[j,k]<=x[i,j]+1)

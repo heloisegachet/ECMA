@@ -14,40 +14,31 @@ function dualisation(filename)
     
     # Create the model
     m = Model(CPLEX.Optimizer)
-
-    # Désactive le presolve (simplification automatique du modèle)
-    set_optimizer_attribute(m, "CPXPARAM_Preprocessing_Presolve", 0)
-    # Désactive la génération de coupes automatiques
-    set_optimizer_attribute(m, "CPXPARAM_MIP_Limits_CutsFactor", 0)
-    # Désactive la génération de solutions entières à partir de solutions
-    # fractionnaires
-    set_optimizer_attribute(m, "CPXPARAM_MIP_Strategy_FPHeur", -1)
-    # Désactive les sorties de CPLEX (optionnel)
-    set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
     
     ### Variables
     # x[i, j] = 1 if (i, j) in same set
-        @variable(m, x[i in 1:n, j in 1:n], Bin)
-        @variable(m, y[i in 1:n, k in 1:K], Bin)
-        @variable(m, mu>=0)
-        @variable(m, lambda[i in 1:n]>=0)
-        @variable(m, alpha>=0)
-        @variable(m, beta[i in 1:n, j in 1:n]>=0)
+    @variable(m, x[i in 1:n, j in 1:n], Bin)
+    @variable(m, y[i in 1:n, k in 1:K], Bin)
+    @variable(m, mu>=0)
+    @variable(m, lambda[i in 1:n]>=0)
+    @variable(m, alpha>=0)
+    @variable(m, beta[i in 1:n, j in 1:n]>=0)
 
 
     ### Constraints
     @constraint(m, [k in 1:K], W*mu
-                               + sum(W_v[v]*lambda[v]
-                               + w_v[v]*y[v,k] for v in 1:n)
+                               + sum(W_v[v]*lambda[v] for v in 1:n)
+                               + sum(w_v[v]*y[v,k] for v in 1:n)
                                <= B)
-    @constraint(m, [v in 1:n, k in 1:K], w_v[v]*y[v,k] - (mu+lambda[v])<=0)
-    @constraint(m, [i in 1:n, j in 1:n], (lh[i]+lh[j])*x[i,j] - (alpha+beta[i,j])<=0)
+
+    @constraint(m, [v in 1:n, k in 1:K], mu+lambda[v]>=w_v[v]*y[v,k])
+    @constraint(m, [i in 1:n, j in 1:n], (alpha+beta[i,j])>=(lh[i]+lh[j])*x[i,j])
     
     @constraint(m, [i in 1:n], sum(y[i,k] for k in 1:K)==1)
     @constraint(m, [i in 1:n, j in 1:n, k in 1:K], y[i,k]+y[j,k]<=x[i,j]+1)
     
     ### Objective
-    @objective(m, Min, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n) + L*alpha+sum(3*beta[i,j] for i in 1:n for j in 1:n))
+    @objective(m, Min, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n if i<j) + L*alpha+sum(3*beta[i,j] for i in 1:n for j in 1:n if i<j))
 
 
     ### Solve the problem
