@@ -21,13 +21,8 @@ function PL_statique(filename)
         @variable(m, y[i in 1:n, k in 1:K], Bin)
 
     ### Constraints
-    println(n, K)
-    for i in 1:n
-        for k in 1:K
-            @constraint(m, w[i]*y[i,k]<=B)
-        end
-    end
-    @constraint(m, [i in 1:n, k in 1:K], w[i]*y[i,k]<=B)
+    
+    @constraint(m, [i in 1:n, k in 1:K], w_v[i]*y[i,k]<=B)
     
     @constraint(m, [i in 1:n], sum(y[i,k] for k in 1:K)==1)
     @constraint(m, [i in 1:n, j in 1:n, k in 1:K], y[i,k]+y[j,k]<=x[i,j]+1)
