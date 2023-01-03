@@ -1,7 +1,7 @@
 
-function sort_nodes(W)
+function sort_nodes(poids)
 	# trie les sommets par poids décroissant
-	sorted_nodes = sortperm(W, rev=true)
+	sorted_nodes = sortperm(poids, rev=true)
 	return sorted_nodes
 end
 
@@ -19,21 +19,35 @@ function allowed(i, partie, W, B)
 	end
 end
 
-function heuristic(G, W, K, B)
+function solver_heuristic(filepath)
+	include(filepath)
+
+	# construit la liste des poids dans le pire des cas
+	poids = Vector{Float64}()
+	for i in 1:n
+		push!(poids, w_v[i]+W_v[i])
+	end
+
+	# appel l'heuristique sur ces donnees
+	return heuristic(poids, K, B)
+end
+
+function heuristic(poids, K, B)
 	# retourne une solution realisable ou affiche une erreur
-	sorted_nodes = sort_nodes(W)
+	
+	sorted_nodes = sort_nodes(poids)
 	partition = Vector{Vector{Int64}}()
 	for k in 1:K
 		push!(partition, Vector{Int64}())
 	end
 	for i in sorted_nodes
 		for k in 1:K
-			if allowed(i,partition[k], W, B)
+			if allowed(i,partition[k], poids, B)
 				push!(partition[k],i)
 				break
 			else
 				if k == K
-					println("impossible de placer ", i)
+					println("erreur")
 					return
 				end
 			end
@@ -45,8 +59,7 @@ end
 
 # test
 
-G = [0 1 2 ; 1 0 3 ; 2 3 0]
-W = [3,1,2]
-K = 2
-B = 3
-println(heuristic(G,W,K,B))
+for file in readdir("./data")
+	# Afficher le nom du fichier
+	println(solver_heuristic("./data/"*file))
+end
