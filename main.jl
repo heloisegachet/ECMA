@@ -1,7 +1,9 @@
 include("dualisation.jl")
+include("PL_statique.jl")
 
 function main()
-    dualisation("data/10_ulysses_3.tsp")
+    PL_statique("data/10_ulysses_3.tsp")
+    #dualisation("data/10_ulysses_3.tsp")
 end
 
 main()
