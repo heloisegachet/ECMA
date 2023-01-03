@@ -28,7 +28,7 @@ function PL_statique(filename)
     @constraint(m, [i in 1:n, j in 1:n, k in 1:K], y[i,k]+y[j,k]<=x[i,j]+1)
     
     ### Objective
-    @objective(m, Min, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n))
+    @objective(m, Min, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n if i<j))
 
 
     ### Solve the problem
@@ -43,7 +43,7 @@ function PL_statique(filename)
     sol = [[] for k in 1:K]
     for i in 1:n
         for k in 1:K
-            if y[i,k]==1
+            if JuMP.value(y[i,k])==1
                 push!(sol[k], i)
             end
         end
