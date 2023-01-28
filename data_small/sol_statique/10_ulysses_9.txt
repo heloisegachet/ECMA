@@ -1,0 +1,4 @@
+file with n = 10 solution of obj value 0.7202777242147631
+          nb nodes = 0, solving time = 0.11300015449523926s
+solution : 
+Vector{Any}[[4], [10], [5], [1, 8], [6], [2], [9], [7], [3]]

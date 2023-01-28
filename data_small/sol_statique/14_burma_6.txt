@@ -1,0 +1,4 @@
+file with n = 14 solution of obj value 17.962247641471908
+          nb nodes = 476, solving time = 0.15599989891052246s
+solution : 
+Vector{Any}[[5], [3, 4], [7, 13], [9, 10, 11], [1, 2, 8], [6, 12, 14]]
