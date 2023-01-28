@@ -1,65 +1,103 @@
-
-function sort_nodes(poids)
-	# trie les sommets par poids décroissant
-	sorted_nodes = sortperm(poids, rev=true)
-	return sorted_nodes
-end
-
-function allowed(i, partie, W, B)
-	# verifie qu'on peut ajouter le sommet i dans la partie
-	w_partie = 0
+function added_value(i, partie, l)
+	# augmentation du coût de la solution en ajoutant i à la partie
+	v = 0
 	for j in partie
-		w_partie += W[j]
+		v = v + l[i,j]
 	end
-	w = W[i]
-	if w_partie + w <= B
-		return true
-	else
-		return false
-	end
+	return v
 end
 
-function solver_heuristic(filepath)
+
+function heuristic(filepath)
 	include(filepath)
 
-	# construit la liste des poids dans le pire des cas
-	poids = Vector{Float64}()
+	# liste des pires poids des sommets
+	w_nodes = Vector{Float64}(zeros(n))
 	for i in 1:n
-		push!(poids, w_v[i]+W_v[i])
+		w_nodes[i] = w_v[i]*(1 + W_v[i])
+	end
+	# ordre des sommets par pire poids décroissant
+	sorted_nodes = sortperm(w_nodes, rev=true)
+
+	# matrice des pires longueurs des arêtes
+	l = zeros(Float64, n, n)
+	for i in 1:n
+		for j in 1:n
+			if j!=i
+				l[i,j] = sqrt((coordinates[i,1] - coordinates[j,1])^2 +(coordinates[i,2] - coordinates[j,2])^2) +3*(lh[i]+lh[j])
+			end
+		end
 	end
 
-	# appel l'heuristique sur ces donnees
-	return heuristic(poids, K, B)
-end
-
-function heuristic(poids, K, B)
-	# retourne une solution realisable ou affiche une erreur
-	
-	sorted_nodes = sort_nodes(poids)
+	# initialise la partition à vide
 	partition = Vector{Vector{Int64}}()
 	for k in 1:K
 		push!(partition, Vector{Int64}())
 	end
+	# initialise le tableau indiquant pour chaque sommet sa partition (0 si non assigné)
+	assignment = Vector{Int64}(zeros(n))
+	# initialise le poids courant de chaque partie
+	w_group = Vector{Float64}(zeros(K))
+	# initialise la valeur courante de chaque partie
+	v_group = Vector{Float64}(zeros(K))
+	# initialise la valeur de la solution
+	v_sol = 0
+	# constante de majoration (somme des longueurs)
+	M = 0
+	for i in 1:n
+		for j in i+1:n
+			M = M + l[i,j]
+		end
+	end
+
+	# heuristique goutonne
 	for i in sorted_nodes
+		# on place i au meilleur endroit possible
+		best_k = 0
+		min_added_value = M
 		for k in 1:K
-			if allowed(i,partition[k], poids, B)
-				push!(partition[k],i)
-				break
+			if w_group[k] + w_nodes[i] > B
+				continue
 			else
-				if k == K
-					println("erreur")
-					return
+				v = added_value(i, partition[k], l)
+				if v < min_added_value
+					min_added_value = v
+					best_k = k
 				end
 			end
 		end
-		
+		if best_k == 0
+			println("erreur")
+			partition = []
+			v_sol = 0
+			return partition, v_sol
+		else
+			# placer i dans la partie best_k et maj des valeurs
+			push!(partition[best_k], i)
+			assignment[i] = best_k
+			w_group[best_k] = w_group[best_k] + w_nodes[i]
+			v_group[best_k] = v_group[best_k] + min_added_value
+			v_sol = v_sol + min_added_value
+		end
 	end
-	return partition
+
+	return partition, v_sol
 end
 
-# test
+# application à toutes les instances
+
+fout = open("output_heuristic.txt", "w")
 
 for file in readdir("./data")
-	# Afficher le nom du fichier
-	println(solver_heuristic("./data/"*file))
+	println(fout, "instance " * file)
+	P, v = heuristic("./data/" * file)
+	if v == 0
+		println(fout, "erreur")
+	else
+		println(fout, "partition = ", P)
+		println(fout, "valeur = ", v)
+	end
+	println(fout, "")
 end
+
+close(fout)
