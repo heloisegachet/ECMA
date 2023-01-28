@@ -54,7 +54,7 @@ function dualisation(filename)
     sol = [[] for k in 1:K]
     for i in 1:n
         for k in 1:K
-            if y[i,k]==1
+            if value(y[i,k])==1
                 push!(sol[k], i)
             end
         end
