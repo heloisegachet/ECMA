@@ -17,7 +17,7 @@ function PL_statique(filename)
 
 	### Variables
 	# x[i, j] = 1 if (i, j) in same set
-		@variable(m, x[i in 1:n, j in 1:n], Bin)
+		@variable(m, x[i in 1:n, j in 1:n; i!=j], Bin)
 		@variable(m, y[i in 1:n, k in 1:K], Bin)
 
 	### Constraints
@@ -25,7 +25,7 @@ function PL_statique(filename)
 	@constraint(m, [k in 1:K], sum(w_v[i]*y[i,k] for i in 1:n)<=B)
 	
 	@constraint(m, [i in 1:n], sum(y[i,k] for k in 1:K)==1)
-	@constraint(m, [i in 1:n, j in 1:n, k in 1:K], y[i,k]+y[j,k]<=x[i,j]+1)
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:K;i!=j], y[i,k]+y[j,k]<=x[i,j]+1)
 	
 	### Objective
 	@objective(m, Min, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n if i<j))

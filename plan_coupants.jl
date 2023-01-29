@@ -71,7 +71,7 @@ function PM(U1, U2)
 	set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
 
 	### Variables
-	@variable(m, x[i in 1:n, j in 1:n;i!=j], Bin)
+	@variable(m, x[i in 1:n, j in 1:n; i!=j], Bin)
 	@variable(m, y[i in 1:n, k in 1:K], Bin)
 	@variable(m, z>=0)
 
