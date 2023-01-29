@@ -120,7 +120,6 @@ function heuristic(filepath)
 			v_sol += min_added_value
 		end
 	end
-<<<<<<< HEAD
 	v_sol = value_sol(partition, l)
 	stop = time()
 

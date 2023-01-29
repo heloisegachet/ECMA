@@ -2,6 +2,26 @@ using JuMP
 using CPLEX
 
 
+function isIntegerPoint(cb_data::CPLEX.CallbackContext, context_id::Clong)
+	# context_id == CPX_CALLBACKCONTEXT_CANDIDATE si le callback est
+	# appelé dans un des deux cas suivants :
+	# cas 1 - une solution entière a été obtenue; ou
+	# cas 2 - une relaxation non bornée a été obtenue
+	if context_id != CPX_CALLBACKCONTEXT_CANDIDATE
+		return false
+	end
+	# Pour déterminer si on est dans le cas 1 ou 2, on essaie de récupérer la
+	# solution entière courante
+	ispoint_p = Ref{Cint}()
+	ret = CPXcallbackcandidateispoint(cb_data, ispoint_p)
+	# S’il n’y a pas de solution entière
+	if ret != 0 || ispoint_p[] == 0
+		return false
+	else
+		return true
+	end
+end
+
 function branch_and_cut(filepath)
 	include(filepath)
 	global l = zeros(Float64, n, n)
@@ -37,47 +57,41 @@ function branch_and_cut(filepath)
 
 	### Callback function
 	function lazy_callback(cb_data::CPLEX.CallbackContext, context_id::Clong)
-
-		if context_id != CPX_CALLBACKCONTEXT_CANDIDATE
-			return
-		end
-		ispoint_p = Ref{Cint}()
-		ret = CPXcallbackcandidateispoint(cb_data, ispoint_p)
-		if ret != 0 || ispoint_p[] == 0
-			return
-		end
-		CPLEX.load_callback_variable_primal(cb_data, context_id)
-		z_star = callback_value(cb_data, z)
-		x_star = zeros(Int64, n, n)
-		for i in 1:n
-			for j in 1:n
-				if j != i
-					x_star[i,j] = round(callback_value(cb_data, m[:x][i,j]))
+		if isIntegerPoint(cb_data, context_id)
+			# Cette ligne doit être appelée avant de pouvoir récupérer la
+			# solution entière ayant entraîné l’appel du callback
+			CPLEX.load_callback_variable_primal(cb_data, context_id)
+			# On récupère la valeur de x, y, z
+			z_star = callback_value(cb_data, z)
+			x_star = zeros(Int64, n, n)
+			#print(z_star)
+			for i in 1:n
+				for j in 1:n
+					if j != i
+						x_star[i,j] = round(callback_value(cb_data, x[i,j]))#round(callback_value(cb_data, m[:x][i,j]))
+					end
 				end
 			end
-		end
-		y_star = zeros(Int64, n, K)
-		for i in 1:n
-			for k in 1:K
-				y_star[i,k] = round(callback_value(cb_data, m[:y][i,k]))
+			y_star = zeros(Int64, n, K)
+			for i in 1:n
+				for k in 1:K
+					y_star[i,k] = round(callback_value(cb_data, y[i,k]))#round(callback_value(cb_data, m[:y][i,k]))
+				end
 			end
-		end
-
-		# x_star = callback_value.((cb_data,), x)
-		# y_star = callback_value.(cb_data, y)
-		
-		### Find a U1 cut
-		delta1_star = SP1(x_star)
-		if(sum(x_star[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j) - z_star > epsilon)
-			cstr1 = @build_constraint(z>=sum(delta1_star[i,j]*x[i,j] for i in 1:n for j in 1:n if i < j))
-			MOI.submit(m, MOI.LazyConstraint(cb_data), cstr1)
-		end
-		### Find a U2 cut
-		for k in 1:K
-			delta2_star_k = SP2k(k, y_star)
-			if(sum(y_star[i,k]*w_v[i]*(1+delta2_star_k[i]) for i in 1:n) - B > epsilon)
-				for k2 in 1:K
-					cstr2 = @build_constraint(sum(w_v[i]*y[i,k2] for i in 1:n)<=B)
+			
+			### Find a U1 cut
+			delta1_star = SP1(x_star)
+			if(sum(x_star[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j) - z_star > epsilon)
+				#println("cut the length")
+				cstr1 = @build_constraint(z>=sum(x[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j))
+				MOI.submit(m, MOI.LazyConstraint(cb_data), cstr1)
+			end
+			### Find a U2 cut
+			for k in 1:K
+				delta2_star_k = SP2k(k, y_star)
+				if(sum(y_star[i,k]*w_v[i]*(1+delta2_star_k[i]) for i in 1:n) - B > epsilon)
+					#println("cut the weight")
+					cstr2 = @build_constraint(sum(y[i,k]*w_v[i]*(1+delta2_star_k[i]) for i in 1:n)<=B)
 					MOI.submit(m, MOI.LazyConstraint(cb_data), cstr2)
 				end
 			end
@@ -94,7 +108,7 @@ function branch_and_cut(filepath)
 
 	### Check
 	println(JuMP.objective_value(m))
-	println(start-stop, "s")
+	println(stop-start, "s")
 end
 
 

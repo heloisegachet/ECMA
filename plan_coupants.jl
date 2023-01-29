@@ -1,4 +1,5 @@
 function plan_coupants(filename)
+	start = time()
 	include(filename)
 	global l = zeros(Float64, n, n)
 	for i in 1:n
@@ -45,9 +46,13 @@ function plan_coupants(filename)
 			end
 		end
 		if !violation
+			stop = time()
+			println(stop - start)
 			return z_star
 		end
 	end
+	stop = time()
+	println(stop - start)
 end
 
 function init_U1()

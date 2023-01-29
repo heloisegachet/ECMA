@@ -1,11 +1,13 @@
 include("dualisation.jl")
 include("PL_statique.jl")
 include("plan_coupants.jl")
+include("branch-and-cut.jl")
 
 function main()
     #PL_statique("data/10_ulysses_3.tsp")
-    dualisation("data/10_ulysses_3.tsp")
+    #dualisation("data/10_ulysses_3.tsp")
     #print("z star final ", plan_coupants("data/10_ulysses_3.tsp"))
+    branch_and_cut("data/10_ulysses_3.tsp")
 
     #foreach(readdir("data_small/")) do file
     #    PL_statique(string("data_small/",file))
