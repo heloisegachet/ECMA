@@ -51,8 +51,6 @@ function heuristic(filepath)
 	for i in 1:n
 		w_nodes[i] = w_v[i]*(1 + W_v[i])
 	end
-	# ordre des sommets par pire poids décroissant
-	sorted_nodes = sortperm(w_nodes, rev=true)
 
 	# matrice des pires longueurs des arêtes
 	l = zeros(Float64, n, n)
@@ -63,6 +61,17 @@ function heuristic(filepath)
 			end
 		end
 	end
+
+	# constante de majoration (somme des longueurs)
+	M = 0
+	for i in 1:n
+		for j in i+1:n
+			M = M + l[i,j]
+		end
+	end
+
+	# ordre des sommets par pire poids décroissant
+	sorted_nodes = sortperm(w_nodes, rev=true)
 
 	# initialise la partition à vide
 	partition = Vector{Vector{Int64}}()
@@ -77,13 +86,8 @@ function heuristic(filepath)
 	v_group = Vector{Float64}(zeros(K))
 	# initialise la valeur de la solution
 	v_sol = 0
-	# constante de majoration (somme des longueurs)
-	M = 0
-	for i in 1:n
-		for j in i+1:n
-			M = M + l[i,j]
-		end
-	end
+
+	start = time()
 
 	# heuristique goutonne
 	for i in sorted_nodes
@@ -106,7 +110,7 @@ function heuristic(filepath)
 			println("erreur")
 			partition = []
 			v_sol = 0
-			return partition, v_sol
+			break
 		else
 			# placer i dans la partie best_k et maj des valeurs
 			push!(partition[best_k], i)
@@ -116,34 +120,20 @@ function heuristic(filepath)
 			v_sol += min_added_value
 		end
 	end
+<<<<<<< HEAD
 	v_sol = value_sol(partition, l)
+	stop = time()
+
+	# ecrire la solution dans un fichier
+	fout = open("./solution_heuristique.txt", "a")
+	if v_sol == 0
+		println(fout, "file "*filepath*" with n = ", n, "erreur", "solving time = ",stop - start, "s")
+	else
+		println(fout, "file "*filepath*" with n = ", n, " solution of obj value ", v_sol, " solving time = ",stop - start, "s")
+		println(fout, "solution : ")
+		println(fout, partition)
+	end
+	close(fout)
 	return partition, v_sol
+
 end
-
-filename = "data_small/10_ulysses_3.tsp"
-P, v = heuristic(filename)
-if v == 0
-	println("erreur")
-else
-	println("partition = ", P)
-	println("valeur = ", v)
-end
-
-# application à toutes les instances
-
-#fout = open("output_heuristic.txt", "w")
-#
-#for file in readdir("./data")
-#	println(fout, "instance " * file)
-#	P, v = heuristic("./data/" * file)
-#	if v == 0
-#		println(fout, "erreur")
-#	else
-#		println(fout, "partition = ", P)
-#		println(fout, "valeur = ", v)
-#	end
-#	println(fout, "")
-#end
-#
-#close(fout)
-#
