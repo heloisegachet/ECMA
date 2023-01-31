@@ -22,7 +22,7 @@ function isIntegerPoint(cb_data::CPLEX.CallbackContext, context_id::Clong)
 	end
 end
 
-function branch_and_cut(filepath)
+function branch_and_cut(filepath, sol_initiale, val_initiale)
 	include(filepath)
 	global l = zeros(Float64, n, n)
 	for i in 1:n
@@ -39,9 +39,42 @@ function branch_and_cut(filepath)
 	MOI.set(m, MOI.NumberOfThreads(), 1)
 
 	### Variables
+	if sol_initiale != []
+		startVal_x = zeros(n,n)
+		startVal_y = zeros(n,K)
+		startVal_z = val_initiale
+		for partie in sol_initiale
+			for i in partie
+				for j in partie
+					startVal_x[i,j] = 1
+				end
+			end
+		end
+		for k in 1:size(sol_initiale)[1]
+			for i in sol_initiale[k]
+				startVal_y[i,k] = 1
+			end
+		end
+	end
+	
 	@variable(m, x[i in 1:n, j in 1:n; i!=j], Bin)
 	@variable(m, y[i in 1:n, k in 1:K], Bin)
 	@variable(m, z>=0)
+
+	if sol_initiale != [] 
+		println("build from heuristic")
+		for i in 1:n
+			for j in 1:n
+				if i != j
+					set_start_value(x[i,j], startVal_x[i,j])
+				end
+			end
+			for k in 1:K 
+				set_start_value(y[i,k], startVal_y[i,k])
+			end
+		end
+		set_start_value(z, startVal_z)
+	end
 
 	### Constraints	
 	@constraint(m, z>=sum(l[i,j]*x[i,j] for i in 1:n for j in 1:n if i < j))
