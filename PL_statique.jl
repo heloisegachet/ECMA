@@ -1,7 +1,7 @@
 using JuMP
 using CPLEX
 
-function PL_statique(filename)
+function PL_statique(filename, time_lim)
 	include(filename)
 	l = zeros(Float64, n, n)
 	for i in 1:n
@@ -14,7 +14,8 @@ function PL_statique(filename)
 	
 	# Create the model
 	m = Model(CPLEX.Optimizer)
-
+	set_silent(m)
+	set_time_limit_sec(m, time_lim)
 	### Variables
 	# x[i, j] = 1 if (i, j) in same set
 		@variable(m, x[i in 1:n, j in 1:n; i!=j], Bin)
@@ -35,20 +36,13 @@ function PL_statique(filename)
 	start = time()
 	optimize!(m)
 	stop = time()
-	file = split(filename, "/")
-    fout = open(string(file[1],"/sol_statique/",first(file[2], length(file[2])-4), ".txt"), "w")
-	# Ecrire "test" dans ce fichier
-	println(fout, "file with n = ",n, " solution of obj value ", JuMP.objective_value(m),"\n"
-				 ,"          nb nodes = ",JuMP.node_count(m),", solving time = ",stop - start, "s")
-	println(fout, "solution : ")
 	sol = [[] for k in 1:K]
 	for i in 1:n
 		for k in 1:K
-			if JuMP.value(y[i,k])==1
+			if value(y[i,k])==1
 				push!(sol[k], i)
 			end
 		end
 	end
-	println(fout, sol)
-	close(fout)
+	write("statique", filename, stop-start, sol, objective_value(m), objective_bound(m), relative_gap(m))
 end

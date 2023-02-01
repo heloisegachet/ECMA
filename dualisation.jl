@@ -1,9 +1,8 @@
 using JuMP
 using CPLEX
-using CSV
-using DataFrames
+include("parser_out.jl")
 
-function dualisation(filename, sol_initiale=[])
+function dualisation(filename, time_lim=60, sol_initiale=[])
 	include(filename)
 	l = zeros(Float64, n, n)
 	for i in 1:n
@@ -34,6 +33,8 @@ function dualisation(filename, sol_initiale=[])
 	# Create the model
 	m = Model(CPLEX.Optimizer)
 	set_optimizer_attribute(m, "CPXPARAM_TimeLimit", 1)
+	set_silent(m)
+	set_time_limit_sec(m, time_lim)
 	
 	### Variables
 	# x[i, j] = 1 if (i, j) in same set
@@ -83,66 +84,21 @@ function dualisation(filename, sol_initiale=[])
     start = time()
     optimize!(m)
     stop = time()
-	filename_sol = "dualisation_sol.csv"
-	if isfile(filename_sol)
-		df = CSV.read(filename_sol, DataFrame)
-	else
-		df = DataFrame("nom_fichier"=> [], "time"=>[], "value"=>[], "sol"=>[])
-	end
-
-	no_sol = true
-	sol = [[] for k in 1:K]
-    for i in 1:n
-        for k in 1:K
-            if value(y[i,k])==1
-                push!(sol[k], i)
-				no_sol = false
-            end
-        end
-    end
-
-	print(filename, " ", array_to_string(sol))
-
-	replace_row = false
-	for row in eachrow(df)
-		if row[:nom_fichier] == filename
-			row[:time] = stop-start
-			if no_sol
-				row[:value] = "None"
-				row[:sol] = "None"
-			else
-				row[:value] = JuMP.objective_value(m)
-				row[:sol] = array_to_string(sol)
-			end
-			replace_row = true
-		end
-	end
-	if !replace_row
-		if no_sol
-			push!(df, [filename, stop-start, "None", "None"])
-		else
-			push!(df, [filename, stop-start, JuMP.objective_value(m), array_to_string(sol)])
-		end
-	end
-
-	CSV.write(filename_sol, df)
-	return sol, JuMP.objective_value(m)
-end
-
-
-function array_to_string(array)
-	print(array)
-	result = ""
-	for i in 1:size(array)[1]
-		result = string(result, "[")
-		for j in 1:length(array[i])
-			if (j > 0)
-				result = string(result, array[i][j])
-			else
-				result = string(result, array[i][j], ", ")
+	
+	if(has_values(m))
+		sol = [[] for k in 1:K]
+		for i in 1:n
+			for k in 1:K
+				if value(y[i,k])==1
+					push!(sol[k], i)
+				end
 			end
 		end
-		result = string(result, "]")
+
+		write("dualisation", filename, stop - start, sol, objective_value(m), objective_bound(m), relative_gap(m))
+		
+		return sol, objective_value(m)
 	end
-	return result
+	return 
 end
+

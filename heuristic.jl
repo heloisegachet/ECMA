@@ -33,13 +33,13 @@ function value_sol(partition)
 	start = time()
 	optimize!(m)
 	stop = time()
-	#println(" solution of obj value ", JuMP.objective_value(m)," solving time = ",stop - start, "s")
+	#println(" solution of obj value ", objective_value(m)," solving time = ",stop - start, "s")
 	#for i in 1:n
 	#	for j in 1:n
 	#		println(i," ",j," l ", l_statique[i,j], " delta ", value(delta[i,j]), " lh ", lh[i]+lh[j])
 	#	end
 	#end
-	return JuMP.objective_value(m)
+	return objective_value(m)
 end
 
 function poids_partie(partie)
@@ -56,17 +56,17 @@ function poids_partie(partie)
 	start = time()
 	optimize!(m)
 	stop = time()
-	somme = sum(w_v[v]*(1+value(delta[v])) for v in partie)
+	#somme = sum(w_v[v]*(1+value(delta[v])) for v in partie)
 	#println("partie ", partie, " somme poids ", somme, " B ", B)
 	#for v in partie
 	#	println(" delta ", v, " ", value(delta[v]), " ", W_v[v], " ", W)
 	#end
-	return JuMP.objective_value(m)
+	return objective_value(m)
 end
 
-function heuristic(filepath)
+function heuristic(filename)
 
-	include(filepath)
+	include(filename)
 
 	# liste des pires poids des sommets
 	w_nodes = Vector{Float64}(zeros(n))
@@ -135,7 +135,7 @@ function heuristic(filepath)
 			println("erreur")
 			partition = []
 			v_sol = 0
-			break
+			return
 		else
 			# placer i dans la partie best_k et maj des valeurs
 			push!(partition[best_k], i)
@@ -150,16 +150,7 @@ function heuristic(filepath)
 
 	stop = time()
 
-	# ecrire la solution dans un fichier
-	fout = open("./solution_heuristique.txt", "a")
-	if v_sol == 0
-		println(fout, "file "*filepath*" with n = ", n, "erreur", "solving time = ",stop - start, "s")
-	else
-		println(fout, "file "*filepath*" with n = ", n, " solution of obj value ", best_val, " solving time = ",stop - start, "s")
-		println(fout, "solution : ")
-		println(fout, best_partition)
-	end
-	close(fout)
+	write("heuristique", filename,stop-start, best_partition, best_val, "None", "None")
 	return best_partition, best_val
 end
 

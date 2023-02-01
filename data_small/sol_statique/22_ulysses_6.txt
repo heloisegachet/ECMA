@@ -1,4 +1,0 @@
-file with n = 22 solution of obj value 82.6309678494024
-          nb nodes = 20277, solving time = 4.841999769210815s
-solution : 
-Vector{Any}[[7, 12, 13, 14], [2, 3, 4, 17, 18], [5, 6, 15], [9, 11], [10, 19, 20, 21], [1, 8, 16, 22]]

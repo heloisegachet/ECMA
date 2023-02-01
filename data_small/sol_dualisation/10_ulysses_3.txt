@@ -1,4 +1,0 @@
-file with n = 10 solution of obj value 136.99527629589417
-          nb nodes = 0, solving time = 0.437999963760376s
-solution : 
-Vector{Any}[[4, 6, 7, 8], [5, 9], [1, 2, 3, 10]]

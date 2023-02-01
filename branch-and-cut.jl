@@ -22,8 +22,8 @@ function isIntegerPoint(cb_data::CPLEX.CallbackContext, context_id::Clong)
 	end
 end
 
-function branch_and_cut(filepath, sol_initiale, val_initiale)
-	include(filepath)
+function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
+	include(filename)
 	global l = zeros(Float64, n, n)
 	for i in 1:n
 		for j in 1:n
@@ -37,6 +37,8 @@ function branch_and_cut(filepath, sol_initiale, val_initiale)
 	m = Model(CPLEX.Optimizer)
 	set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
 	MOI.set(m, MOI.NumberOfThreads(), 1)
+	set_silent(m)
+	set_time_limit_sec(m, time_lim)
 
 	### Variables
 	if sol_initiale != []
@@ -139,9 +141,22 @@ function branch_and_cut(filepath, sol_initiale, val_initiale)
 	optimize!(m)
 	stop = time()
 
-	### Check
-	println(JuMP.objective_value(m))
-	println(stop-start, "s")
+	if !has_values(m)
+		return
+	end
+
+	sol = [[] for k in 1:K]
+    for i in 1:n
+        for k in 1:K
+            if value(y[i,k])==1
+                push!(sol[k], i)
+            end
+        end
+    end
+
+
+	write("Branch_and_cut", filename, stop - start, sol, objective_value(m), objective_bound(m), relative_gap(m))
+	return sol, objective_value(m)
 end
 
 
@@ -165,7 +180,7 @@ function SP1(x_star)
 	for i in 1:n
 		for j in 1:n
 			if i!=j
-				delta_val[i,j] = JuMP.value(delta1[i,j])
+				delta_val[i,j] = value(delta1[i,j])
 			end
 		end
 	end
@@ -189,5 +204,5 @@ function SP2k(k, y_star)
 	
 	### Solve the problem
 	optimize!(m2)    
-	return Vector{Float64}([JuMP.value(delta2[i]) for i in 1:n])
+	return Vector{Float64}([value(delta2[i]) for i in 1:n])
 end
