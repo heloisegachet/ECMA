@@ -6,18 +6,19 @@ include("heuristic.jl")
 
 function main()
     time_lim = 120
-    foreach(readdir("data/")) do file
+    folder = "data small/"
+    foreach(readdir(folder)) do file
         println(file)
         println("statique")
-        PL_statique(string("data/",file), time_lim)
+        PL_statique(string(folder,file), time_lim)
         println("dualisation")
-        dualisation(string("data/",file), time_lim)
+        dualisation(string(folder,file), time_lim)
         println("plan_coupants")
-        plan_coupants(string("data/",file), time_lim)
+        plan_coupants(string(folder,file), time_lim)
         println("branch-and-cut")
-        branch_and_cut(string("data/",file), time_lim)
+        branch_and_cut(string(folder,file), time_lim)
         println("heuristic")
-        heuristic(string("data/",file), time_lim)
+        heuristic(string(folder,file), time_lim)
     end
 end
 main()

@@ -10,7 +10,7 @@ function write(output_name, filename, time, sol, value, obj_lb, gap)
 		df = DataFrame("nom_fichier"=> [], 
 						"time"=>[], 
 						"value"=>[], "sol"=>[], "obj_bound"=>[],"gap"=>[])
-		push!(df, [" "^30, 0, " "^30, " "^30, 0,0])
+		push!(df, [" "^30, 0, " "^30, " "^200, 0,0])
 	end
 
     filename_info = split(filename, "/")[2]
@@ -70,8 +70,8 @@ function array_to_string(array)
 		end
 		result = string(result, "]")
 	end
-	if length(result)>30
-		return string(result[1:27], "...")
+	if length(result)>200
+		return string(result[1:197], "...")
 	else 
 		return result
 	end
