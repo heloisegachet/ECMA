@@ -7,14 +7,27 @@ function write(output_name, filename, time, sol, value, obj_lb, gap)
 	if isfile(filename_sol)
 		df = CSV.read(filename_sol, DataFrame)
 	else
-		df = DataFrame("nom_fichier"=> [], "time"=>[], "value"=>[], "sol"=>[], "obj_bound"=>[],"gap"=>[])
+		df = DataFrame("nom_fichier"=> [], 
+						"time"=>[], 
+						"value"=>[], "sol"=>[], "obj_bound"=>[],"gap"=>[])
+		push!(df, [" "^30, 0, " "^30, " "^30, 0,0])
 	end
 
     filename_info = split(filename, "/")[2]
 	replace_row = false
 	for row in eachrow(df)
 		if row[:nom_fichier] == filename_info
-			row[:time] = time
+			row[:time] = round(time, digits=3)
+			value = split(string(value), " / ")
+			if length(value) > 1
+				first_val = round(float(value[1]), sigdigits=8)
+				second_val = round(float(value[2]), sigdigits=8)
+				value = string(first_val, " / ", second_val)
+			elseif isa(value, Number)
+				value = round(value[1], sigdigits=8)
+			else
+				value = value[1]
+			end
 			row[:value] = value
 			row[:sol] = array_to_string(sol)
 			row[:obj_bound] = obj_lb
@@ -23,7 +36,17 @@ function write(output_name, filename, time, sol, value, obj_lb, gap)
 		end
 	end
 	if !replace_row
-		push!(df, [filename_info, time, value, array_to_string(sol), obj_lb,gap])
+		value = split(string(value), " / ")
+		if length(value) > 1
+			first_val = round(parse(Float64,value[1]), sigdigits=8)
+			second_val = round(parse(Float64,value[2]), sigdigits=8)
+			value = string(first_val, " / ", second_val)
+		elseif isa(value, Number)
+			value = round(value[1], sigdigits=8)
+		else
+			value = value[1]
+		end
+		push!(df, [filename_info, time, string(value), array_to_string(sol), obj_lb,gap])
 	end
 
 	CSV.write(filename_sol, df)

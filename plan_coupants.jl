@@ -15,7 +15,7 @@ function plan_coupants(filename, time_lim=60)
 	U1 = init_U1()
 	U2 = init_U2()
 	violation = true
-	y_star,z_star, obj_lb, gap = -1,-1,-1,-1
+	y_star,x_star, z_star, obj_lb, gap = -1,-1,-1,-1, -1
 	while(violation)
 		violation = false
 		#println("ajout de contraintes")

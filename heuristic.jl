@@ -21,31 +21,20 @@ function value_sol(partition)
 	@constraint(m, [i in 1:n, j in 1:n;i!=j], delta[i,j]<=3)
 	@constraint(m, sum(delta[i,j] for i in 1:n, j in 1:n if i!=j) <=L)
 	### Objective
-	obj = 0
-	for index_k in 1:size(partition)[1]
-		if (length(partition[index_k]) >= 2)
-			obj += sum(l_statique[i,j] + delta[i,j]*(lh[i]+lh[j]) for i in partition[index_k], j in partition[index_k] if i<j) 
-		end
-	end
-	
-	@objective(m, Max, obj)
+	@objective(m, Max, sum(sum(l_statique[i,j] + delta[i,j]*(lh[i]+lh[j]) for i in partition[index_k], j in partition[index_k] if i<j) for index_k in 1:size(partition)[1] if (length(partition[index_k]) >= 2)))
 	### Solve the problem
-	start = time()
 	optimize!(m)
-	stop = time()
-	#println(" solution of obj value ", objective_value(m)," solving time = ",stop - start, "s")
-	#for i in 1:n
-	#	for j in 1:n
-	#		println(i," ",j," l ", l_statique[i,j], " delta ", value(delta[i,j]), " lh ", lh[i]+lh[j])
-	#	end
-	#end
 	return objective_value(m)
 end
 
-function poids_partie(partie)
+function poids_partie(partie, time_lim)
+	if time_lim < 1
+		return
+	end
 	# Create the model
 	m = Model(CPLEX.Optimizer)
 	set_silent(m)
+	set_time_limit_sec(m, time_lim)
 	### Variables
 	@variable(m, delta[v in partie]>=0)
 	### Constraints
@@ -53,20 +42,18 @@ function poids_partie(partie)
 	@constraint(m, sum(delta[v] for v in partie) <=W)
 	@objective(m, Max, sum(w_v[v]*(1+delta[v]) for v in partie))
 	### Solve the problem
-	start = time()
 	optimize!(m)
-	stop = time()
-	#somme = sum(w_v[v]*(1+value(delta[v])) for v in partie)
-	#println("partie ", partie, " somme poids ", somme, " B ", B)
-	#for v in partie
-	#	println(" delta ", v, " ", value(delta[v]), " ", W_v[v], " ", W)
-	#end
-	return objective_value(m)
+	if(has_values(m))
+		return objective_value(m)
+	end
+	return
 end
 
-function heuristic(filename)
+function heuristic(filename, time_lim)
 
 	include(filename)
+
+	start = time()
 
 	# liste des pires poids des sommets
 	w_nodes = Vector{Float64}(zeros(n))
@@ -112,15 +99,19 @@ function heuristic(filename)
 	# initialise la valeur de la solution
 	v_sol = 0
 
-	start = time()
-
 	# heuristique goutonne
 	for i in sorted_nodes
 		# on place i au meilleur endroit possible
 		best_k = 0
 		min_added_value = M
 		for k in 1:K
-			if w_group[k] + w_nodes[i] > B
+			new_partie = Vector{Int64}()
+			for elem in partition[k]
+				push!(new_partie,elem)
+			end
+			push!(new_partie, i)
+			poids = poids_partie(new_partie, time_lim-time()+start)
+			if !isnothing(poids) && poids > B 
 				continue
 			else
 				#println(partition[k],l)
@@ -145,20 +136,22 @@ function heuristic(filename)
 		end
 	end
 
+	old_val = value_sol(partition)
 	println("RECHERCHE LOCALE")
-	best_partition, best_val = recherche_locale(partition)
+	best_partition, best_val = recherche_locale(partition, time_lim - time() + start)
 
 	stop = time()
 
-	write("heuristique", filename,stop-start, best_partition, best_val, "None", "None")
+	write("heuristique", filename,stop-start, best_partition, string(old_val," / ",best_val), "None", "None")
 	return best_partition, best_val
 end
 
 
-function recherche_locale(partition)
+function recherche_locale(partition, time_lim)
+	start = time()
 	old_val = value_sol(partition)
 	iter = 0
-	while iter < 100
+	while time() - start < time_lim
 		k1 = rand(1:K)
 		k2 = rand([1:k1-1;k1+1:K])
 		v1 = rand([partition[k1];-1])
@@ -181,7 +174,11 @@ function recherche_locale(partition)
 		end
 		valid = true
 		for partie in new_partition
-			if poids_partie(partie) > B 
+			poids = poids_partie(partie, time_lim - time()+start)
+			if isnothing(poids)
+				return partition, old_val
+			end
+			if poids > B 
 				valid = false
 				break
 			end

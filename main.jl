@@ -5,8 +5,7 @@ include("branch-and-cut.jl")
 include("heuristic.jl")
 
 function main()
-    time_lim = 30
-
+    time_lim = 120
     foreach(readdir("data/")) do file
         println(file)
         println("statique")
@@ -18,9 +17,8 @@ function main()
         println("branch-and-cut")
         branch_and_cut(string("data/",file), time_lim)
         println("heuristic")
-        heuristic(string("data/",file))
+        heuristic(string("data/",file), time_lim)
     end
 end
-
 main()
 
