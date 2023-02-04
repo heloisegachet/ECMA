@@ -8,30 +8,26 @@ function plan_coupants(filename, time_lim=60)
 	
 		end
 	end
-	epsilon = 10^-6
+	epsilon = 10^-12
 
-	start = time()
 
 	U1 = init_U1()
 	U2 = init_U2()
 	violation = true
 	y_star,x_star, z_star, obj_lb, gap = -1,-1,-1,-1, -1
+	start = time()
 	while(violation)
 		violation = false
 		#println("ajout de contraintes")
-		if time_lim - time()+start <1
-			break
+		output = PM(U1, U2, time_lim - time()+start) 
+		if isnothing(output)
+			return 
 		end
-		try
-			x_star, y_star, z_star, obj_lb, gap = PM(U1, U2, time_lim - time()+start) 
-		catch
+		x_star, y_star, z_star, obj_lb, gap = output
+		delta1_star = SP1(x_star, time_lim - time()+start)
+		if isnothing(delta1_star)
 			return
 		end
-		#println("y ", y_star)
-		if time_lim - time()+start <1
-			break
-		end
-		delta1_star = SP1(x_star, time_lim - time()+start)
 		#println("z_star ",z_star)
 		#println("sum ",sum(x_star[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j))
 		if(sum(x_star[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j) - z_star > epsilon)
@@ -46,10 +42,10 @@ function plan_coupants(filename, time_lim=60)
 			violation = true
 		end
 		for k in 1:K
-			if time_lim - time()+start <1
-				break
-			end
 			delta2_star_k = SP2k(k, y_star, time_lim - time()+start)
+			if isnothing(delta2_star_k)
+				return
+			end
 			if(sum(y_star[i,k]*w_v[i]*(1+delta2_star_k[i]) for i in 1:n) - B > epsilon)
 				#println("violation de contrainte sur les poids")
 				w2 = Vector{Float64}(undef, n)
@@ -94,6 +90,9 @@ function init_U2()
 end
 
 function PM(U1, U2, time)
+	if time < 1
+		return
+	end
 	# Create the model
 	m = Model(CPLEX.Optimizer)
 	set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
@@ -138,6 +137,9 @@ function PM(U1, U2, time)
 end
 
 function SP1(x_star, time)
+	if time < 1
+		return
+	end
 	m = Model(CPLEX.Optimizer)
 	set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
 	set_silent(m)
@@ -151,7 +153,7 @@ function SP1(x_star, time)
 	@constraint(m, sum(delta1[i,j] for i in 1:n, j in 1:n if i!=j)<=L)
 	
 	### Objective
-	@objective(m, Max, sum((l[i,j]+(lh[i]+lh[j])*delta1[i,j])*x_star[i,j] for i in 1:n, j in 1:n if i!=j))
+	@objective(m, Max, sum((l[i,j]+(lh[i]+lh[j])*delta1[i,j])*x_star[i,j] for i in 1:n, j in 1:n if i<j))
 	
 	### Solve the problem
 	optimize!(m)
@@ -167,6 +169,9 @@ function SP1(x_star, time)
 end
 
 function SP2k(k, y_star, time)
+	if time < 1
+		return
+	end
 	m = Model(CPLEX.Optimizer)
 	set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
 	set_silent(m)

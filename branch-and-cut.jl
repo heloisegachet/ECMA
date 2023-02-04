@@ -31,7 +31,7 @@ function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
 							+(coordinates[i,2] - coordinates[j,2])^2)
 		end
 	end
-	epsilon = 10^-6
+	epsilon = 10^-12
 
 	# Create the model
 	m = Model(CPLEX.Optimizer)
@@ -99,18 +99,18 @@ function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
 			# On récupère la valeur de x, y, z
 			z_star = callback_value(cb_data, z)
 			x_star = zeros(Int64, n, n)
-			#print(z_star)
+			#println(z_star)
 			for i in 1:n
 				for j in 1:n
 					if j != i
-						x_star[i,j] = round(callback_value(cb_data, x[i,j]))#round(callback_value(cb_data, m[:x][i,j]))
+						x_star[i,j] = round(callback_value(cb_data, m[:x][i,j]))
 					end
 				end
 			end
 			y_star = zeros(Int64, n, K)
 			for i in 1:n
 				for k in 1:K
-					y_star[i,k] = round(callback_value(cb_data, y[i,k]))#round(callback_value(cb_data, m[:y][i,k]))
+					y_star[i,k] = round(callback_value(cb_data, m[:y][i,k]))
 				end
 			end
 			
@@ -118,7 +118,7 @@ function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
 			delta1_star = SP1(x_star)
 			if(sum(x_star[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j) - z_star > epsilon)
 				#println("cut the length")
-				cstr1 = @build_constraint(z>=sum(x[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j))
+				cstr1 = @build_constraint(z >= sum(x[i,j]*(l[i,j]+delta1_star[i,j]*(lh[i]+lh[j])) for i in 1:n for j in 1:n if i<j))
 				MOI.submit(m, MOI.LazyConstraint(cb_data), cstr1)
 			end
 			### Find a U2 cut
@@ -142,6 +142,7 @@ function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
 	stop = time()
 
 	if !has_values(m)
+		println("erreur")
 		return
 	end
 
@@ -153,7 +154,6 @@ function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
             end
         end
     end
-
 
 	write("Branch_and_cut", filename, stop - start, sol, objective_value(m), objective_bound(m), relative_gap(m))
 	return sol, objective_value(m)
@@ -172,7 +172,7 @@ function SP1(x_star)
 	@constraint(m, sum(delta1[i,j] for i in 1:n, j in 1:n if i!=j)<=L)
 	
 	### Objective
-	@objective(m, Max, sum((l[i,j]+(lh[i]+lh[j])*delta1[i,j])*x_star[i,j] for i in 1:n, j in 1:n if i!=j))
+	@objective(m, Max, sum((l[i,j]+(lh[i]+lh[j])*delta1[i,j])*x_star[i,j] for i in 1:n, j in 1:n if i<j))
 	
 	### Solve the problem
 	optimize!(m)

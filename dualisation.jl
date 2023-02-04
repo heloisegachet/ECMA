@@ -73,8 +73,8 @@ function dualisation(filename, time_lim=60, sol_initiale=[])
 	
 	@constraint(m, [i in 1:n], sum(y[i,k] for k in 1:K)==1)
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:K;i!=j], y[i,k]+y[j,k]-x[i,j]<=1)
-	#@constraint(m, [i in 1:n, j in 1:n, k in 1:K;i!=j], y[i,k]-y[j,k]+x[i,j]<=1)
-	#@constraint(m, [i in 1:n, j in 1:n, k in 1:K;i!=j], -y[i,k]+y[j,k]+x[i,j]<=1)
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:K;i!=j], y[i,k]-y[j,k]+x[i,j]<=1)
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:K;i!=j], -y[i,k]+y[j,k]+x[i,j]<=1)
 	
 	### Objective
 	@objective(m, Min, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n if i<j) + L*alpha+sum(3*beta[i,j] for i in 1:n for j in 1:n if i<j))

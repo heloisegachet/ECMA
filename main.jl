@@ -5,7 +5,7 @@ include("branch-and-cut.jl")
 include("heuristic.jl")
 
 function main()
-    time_lim = 120
+    time_lim = 30
     folder = "data small/"
     foreach(readdir(folder)) do file
         println(file)
@@ -20,6 +20,14 @@ function main()
         println("heuristic")
         heuristic(string(folder,file), time_lim)
     end
+    #file = "10_ulysses_6.tsp"
+    #PL_statique(string(folder,file), time_lim)
+    #println("dualisation")
+    #dualisation(string(folder,file), time_lim)
+    #println("plan_coupants")
+    #plan_coupants(string(folder,file), time_lim)
+    #println("branch-and-cut")
+    #branch_and_cut(string(folder,file), time_lim)
 end
 main()
 
