@@ -1,7 +1,7 @@
 using JuMP
 using CPLEX
 
-function PL_statique(filename, time_lim)
+function PL_statique(filename, time_lim; cut_one=false)
 	include(filename)
 	l = zeros(Float64, n, n)
 	for i in 1:n
@@ -22,6 +22,10 @@ function PL_statique(filename, time_lim)
 		@variable(m, y[i in 1:n, k in 1:K], Bin)
 
 	### Constraints
+	if cut_one
+		println("cut cluster one")
+		@constraint(m, y[1,1]==1)
+	end
 	
 	@constraint(m, [k in 1:K], sum(w_v[i]*y[i,k] for i in 1:n)<=B)
 	
@@ -45,4 +49,5 @@ function PL_statique(filename, time_lim)
 		end
 	end
 	write("statique", filename, stop-start, sol, objective_value(m), objective_bound(m), relative_gap(m))
+	return objective_bound(m)
 end

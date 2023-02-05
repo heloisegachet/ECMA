@@ -2,7 +2,7 @@ using JuMP
 using CPLEX
 include("parser_out.jl")
 
-function dualisation(filename, time_lim=60, sol_initiale=[])
+function dualisation(filename, time_lim=60; sol_initiale=[], relax=nothing, cut_one=false)
 	include(filename)
 	l = zeros(Float64, n, n)
 	for i in 1:n
@@ -62,7 +62,14 @@ function dualisation(filename, time_lim=60, sol_initiale=[])
 	### Constraints
 	#@constraint(m, y[1,1] == 1)
 
-	
+	if !isnothing(relax)
+		println("cut relax statique")
+		@constraint(m, sum(l[i,j]*x[i,j] for i in 1:n, j in 1:n if i<j) + L*alpha+sum(3*beta[i,j] for i in 1:n for j in 1:n if i<j)>=relax)
+	end
+	if cut_one
+		println("cut cluster one")
+		@constraint(m,y[1,1]==1)
+	end
 	@constraint(m, [k in 1:K], W*mu[k]
 							   + sum(W_v[v]*lambda[v,k] for v in 1:n)
 							   + sum(w_v[v]*y[v,k] for v in 1:n)

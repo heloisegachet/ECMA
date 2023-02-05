@@ -22,7 +22,7 @@ function isIntegerPoint(cb_data::CPLEX.CallbackContext, context_id::Clong)
 	end
 end
 
-function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
+function branch_and_cut(filename, time_lim=60; sol_initiale=[], val_initiale=-1, relax=nothing, cut_one=false)
 	include(filename)
 	global l = zeros(Float64, n, n)
 	for i in 1:n
@@ -79,6 +79,14 @@ function branch_and_cut(filename, time_lim=60, sol_initiale=[], val_initiale=-1)
 	end
 
 	### Constraints	
+	if !isnothing(relax)
+		println("cut relax statique")
+		@constraint(m, z>=relax)
+	end
+	if cut_one
+		println("cut cluster one")
+		@constraint(m,y[1,1]==1)
+	end
 	@constraint(m, z>=sum(l[i,j]*x[i,j] for i in 1:n for j in 1:n if i < j))
 	@constraint(m, [k in 1:K], sum(w_v[i]*y[i,k] for i in 1:n)<=B)
 	

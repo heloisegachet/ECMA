@@ -1,4 +1,5 @@
-function plan_coupants(filename, time_lim=60)
+
+function plan_coupants(filename, time_lim=60; sol_initiale = [], val_initiale = -1, relax=nothing, cut_one=false)
 	include(filename)
 	global l = zeros(Float64, n, n)
 	for i in 1:n
@@ -9,7 +10,33 @@ function plan_coupants(filename, time_lim=60)
 		end
 	end
 	epsilon = 10^-12
-
+	if !isnothing(relax)
+		println("cut relax statique")
+	end
+	if cut_one
+		println("cut cluster one")
+	end
+	startVal_x = nothing
+	startVal_y = nothing
+	startVal_z = nothing
+	if sol_initiale != []
+		println("build from heuristic")
+		startVal_x = zeros(n,n)
+		startVal_y = zeros(n,K)
+		startVal_z = val_initiale
+		for partie in sol_initiale
+			for i in partie
+				for j in partie
+					startVal_x[i,j] = 1
+				end
+			end
+		end
+		for k in 1:size(sol_initiale)[1]
+			for i in sol_initiale[k]
+				startVal_y[i,k] = 1
+			end
+		end
+	end
 
 	U1 = init_U1()
 	U2 = init_U2()
@@ -19,7 +46,7 @@ function plan_coupants(filename, time_lim=60)
 	while(violation)
 		violation = false
 		#println("ajout de contraintes")
-		output = PM(U1, U2, time_lim - time()+start) 
+		output = PM(U1, U2, time_lim - time()+start, start_x=startVal_x, start_y=startVal_y, start_z = startVal_z, relax=relax, cut_one=cut_one) 
 		if isnothing(output)
 			return 
 		end
@@ -59,7 +86,7 @@ function plan_coupants(filename, time_lim=60)
 	end
 	stop = time()
 	
-	if violation != true
+	if !violation
 		sol = [[] for k in 1:K]
 		for i in 1:n
 			for k in 1:K
@@ -89,10 +116,11 @@ function init_U2()
 	return U2
 end
 
-function PM(U1, U2, time)
+function PM(U1, U2, time; start_x=startVal_x, start_y=startVal_y, start_z = startVal_z, relax=nothing, cut_one=false)
 	if time < 1
 		return
-	end
+	end	
+
 	# Create the model
 	m = Model(CPLEX.Optimizer)
 	set_optimizer_attribute(m, "CPX_PARAM_SCRIND", 0)
@@ -103,7 +131,27 @@ function PM(U1, U2, time)
 	@variable(m, y[i in 1:n, k in 1:K], Bin)
 	@variable(m, z>=0)
 
+	if !isnothing(start_x)
+		for i in 1:n
+			for j in 1:n
+				if i != j
+					set_start_value(x[i,j], start_x[i,j])
+				end
+			end
+			for k in 1:K 
+				set_start_value(y[i,k], start_y[i,k])
+			end
+		end
+		set_start_value(z, start_z)
+	end
+
 	### Constraints
+	if !isnothing(relax)
+		@constraint(m, z>=relax)
+	end
+	if cut_one
+		@constraint(m,y[1,1]==1)
+	end
 	@constraint(m, [u1 in U1], z>=sum(u1[i,j]*x[i,j] for i in 1:n for j in 1:n if i < j))
 	@constraint(m, [k in 1:K, u2 in U2[k]], sum(u2[i]*y[i,k] for i in 1:n)<=B)
 	
