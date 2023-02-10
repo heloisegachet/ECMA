@@ -228,5 +228,7 @@ def upper_tick_from_time(time_table, time):
             b = middle
     return b
 
-plot_nb_instances("30 s all/", 100)
-#plot_nb_instances("5min/", 50)
+#plot_objective("10 min/")
+plot_objective("60 s all/")
+#plot_nb_instances("30 s all/", 100)
+#plot_nb_instances("60 s all/", 100)

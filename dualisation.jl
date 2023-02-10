@@ -2,7 +2,7 @@ using JuMP
 using CPLEX
 include("parser_out.jl")
 
-function dualisation(filename, time_lim=60; sol_initiale=[], relax=nothing, cut_one=false)
+function dualisation(filename, time_lim=60; gap=1e-6, sol_initiale=[], relax=nothing, cut_one=false)
 	include(filename)
 	l = zeros(Float64, n, n)
 	for i in 1:n
@@ -35,7 +35,7 @@ function dualisation(filename, time_lim=60; sol_initiale=[], relax=nothing, cut_
 	set_optimizer_attribute(m, "CPXPARAM_TimeLimit", 1)
 	set_silent(m)
 	set_time_limit_sec(m, time_lim)
-	
+	set_optimizer_attribute(m, "CPX_PARAM_EPGAP", gap)
 	### Variables
 	# x[i, j] = 1 if (i, j) in same set
 	@variable(m, x[i in 1:n, j in 1:n;i!=j], Bin)
@@ -101,10 +101,9 @@ function dualisation(filename, time_lim=60; sol_initiale=[], relax=nothing, cut_
 				end
 			end
 		end
-
-		write("dualisation", filename, stop - start, sol, objective_value(m), objective_bound(m), relative_gap(m))
+		write("dualisation", filename, stop - start, sol, objective_value(m), string(objective_bound(m)), string(relative_gap(m)))
 		
-		return sol, objective_value(m)
+		return sol, objective_value(m), relative_gap(m)
 	end
 	return 
 end

@@ -5,22 +5,31 @@ include("branch-and-cut.jl")
 include("heuristic.jl")
 
 function main()
-    time_lim = 30
-    folder = "data large/"
-    PL_statique("data small/26_eil_6.tsp", 10*60)
-    #foreach(readdir(folder)) do file
-    #    println(file)
-    #    println("statique")
-    #    PL_statique(string(folder,file), time_lim)
-    #    println("dualisation")
-    #    dualisation(string(folder,file), time_lim)
-    #    println("plan_coupants")
-    #    plan_coupants(string(folder,file), time_lim)
-    #    println("branch-and-cut")
-    #    branch_and_cut(string(folder,file), time_lim)
-    #    println("heuristic")
-    #    heuristic(string(folder,file), time_lim)
-    #end
+    time_lim = 60
+    folder = "data/"
+    foreach(readdir(folder)) do file
+        println(file)
+        println("statique")
+        #PL_statique(string(folder,file), time_lim)
+        println("dualisation")
+        res = dualisation(string(folder,file), time_lim, gap=1e-6)
+        if !isnothing(res)
+            sol, val, gap =res
+        else
+            gap = nothing
+        end
+        println("plan_coupants")
+        #plan_coupants(string(folder,file), time_lim)
+        println("branch-and-cut")
+        #branch_and_cut(string(folder,file), time_lim)
+        println("heuristic")
+        if !isnothing(gap) && gap < 1e-8
+            heuristic(string(folder,file), time_lim, val_min=val)
+        else
+            heuristic(string(folder,file), time_lim, val_min=nothing)
+        end
+    end
+
     #foreach(readdir(folder)) do file
     #    println(file)
     #    println("statique")
@@ -68,4 +77,3 @@ function main()
     #branch_and_cut(string(folder,file), time_lim)
 end
 main()
-

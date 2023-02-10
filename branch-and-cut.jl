@@ -163,7 +163,7 @@ function branch_and_cut(filename, time_lim=60; sol_initiale=[], val_initiale=-1,
         end
     end
 
-	write("Branch_and_cut", filename, stop - start, sol, objective_value(m), objective_bound(m), relative_gap(m))
+	write("Branch_and_cut", filename, stop - start, sol, objective_value(m), string(objective_bound(m)), relative_gap(m))
 	return sol, objective_value(m)
 end
 

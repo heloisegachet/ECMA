@@ -48,6 +48,6 @@ function PL_statique(filename, time_lim; cut_one=false)
 			end
 		end
 	end
-	write("statique", filename, stop-start, sol, objective_value(m), objective_bound(m), relative_gap(m))
+	write("statique", filename, stop-start, sol, objective_value(m), string(objective_bound(m)), relative_gap(m))
 	return objective_bound(m)
 end

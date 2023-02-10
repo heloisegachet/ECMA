@@ -10,7 +10,7 @@ function write(output_name, filename, time, sol, value, obj_lb, gap)
 		df = DataFrame("nom_fichier"=> [], 
 						"time"=>[], 
 						"value"=>[], "sol"=>[], "obj_bound"=>[],"gap"=>[])
-		push!(df, [" "^30, 0, " "^30, " "^200, 0,0])
+		push!(df, [" "^30, 0, " "^30, " "^200, " "^30," "^30])
 	end
 
     filename_info = split(filename, "/")[2]
@@ -30,8 +30,8 @@ function write(output_name, filename, time, sol, value, obj_lb, gap)
 			end
 			row[:value] = value
 			row[:sol] = array_to_string(sol)
-			row[:obj_bound] = obj_lb
-			row[:gap] = gap
+			row[:obj_bound] = string(obj_lb)
+			row[:gap] = string(gap)
 			replace_row = true
 		end
 	end
@@ -46,7 +46,7 @@ function write(output_name, filename, time, sol, value, obj_lb, gap)
 		else
 			value = value[1]
 		end
-		push!(df, [filename_info, time, string(value), array_to_string(sol), obj_lb,gap])
+		push!(df, [filename_info, time, string(value), array_to_string(sol), string(obj_lb),string(gap)])
 	end
 
 	CSV.write(filename_sol, df)

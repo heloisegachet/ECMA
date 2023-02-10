@@ -95,7 +95,7 @@ function plan_coupants(filename, time_lim=60; sol_initiale = [], val_initiale = 
 				end
 			end
 		end
-		write("plans_coupants", filename, stop - start, sol, z_star, obj_lb, gap)
+		write("plans_coupants", filename, stop - start, sol, z_star, string(obj_lb), gap)
 		return sol, z_star
 	end
 	return
